@@ -1,5 +1,5 @@
 const MongoClient = require('mongodb').MongoClient;
-const { URI } = require('./config');
+const { URI } = require('./config/config');
 const client = new MongoClient(URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
 module.exports.connect = async () => {

@@ -4,7 +4,7 @@ const { connect } = require('./db');
 const { ObjectId } = require('mongodb');
 const morgan = require('morgan');
 const cors = require('cors');
-const PORT = process.env.PORT || 50000;
+const { PORT } = require('./config/config');
 let db;
 
 // middleware
@@ -25,6 +25,7 @@ app.get('/api/resources/:collection', async (req, res) => {
   try {
     // find all from collection and send
     const docs = await db.collection(req.params.collection).find().toArray();
+    // send docs
     res.send(docs);
   } catch (err) {
     console.log(err.message, err.stack);
@@ -42,7 +43,7 @@ app.post('/api/resource', async (req, res) => {
     }, []);
     // insert doc
     const newDoc = await db.collection(collection).insertOne({ description, keywords, resource });
-    // send it back
+    // send back new doc
     res.send(newDoc);
   } catch (err) {
     console.log(err.message, err.stack);
@@ -62,7 +63,7 @@ app.put('/api/resource/:collection/:id', async (req, res) => {
         { $set: { ...req.body } },
         { returnOriginal: false }
       );
-    // send it
+    // send it back
     res.send(updatedDoc);
   } catch (err) {
     console.log(err.message, err.stack);
@@ -73,7 +74,9 @@ app.put('/api/resource/:collection/:id', async (req, res) => {
 // connections
 (async () => {
   try {
+    // mongodb
     db = await connect();
+    // express
     app.listen(PORT, () => console.log(`API listening ${PORT}`));
   } catch (err) {
     console.log(err.message, err.stack);
