@@ -1,8 +1,8 @@
-const MongoClient = require('mongodb').MongoClient;
-const { URI } = require('./config/config');
+import { MongoClient } from 'mongodb';
+import { URI } from './config/config';
 const client = new MongoClient(URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
-module.exports.connect = async () => {
+export default async function connect() {
   try {
     await client.connect();
     console.log('Connected to MongoDB');
@@ -10,4 +10,4 @@ module.exports.connect = async () => {
   } catch (err) {
     console.log(err.message, err.stack);
   }
-};
+}
