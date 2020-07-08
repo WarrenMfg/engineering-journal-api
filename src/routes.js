@@ -9,7 +9,7 @@ export default (app, db) => {
       if (/^\$/.test(collection)) throw new Error('No topic with that name.');
 
       // find all from collection and send
-      const docs = await db.collection(collection).find().toArray();
+      const docs = await db.collection(collection).find().sort('createdAt', -1).toArray();
 
       // send docs
       res.send(docs);
@@ -26,10 +26,10 @@ export default (app, db) => {
       // ensure clean param
       if (/^\$/.test(collection)) throw new Error('No topic with that name.');
 
-      let { description, keywords, resource } = req.body;
+      let { description, keywords, link, createdAt } = req.body;
 
       // insert doc
-      const newDoc = await db.collection(collection).insertOne({ description, keywords, resource });
+      const newDoc = await db.collection(collection).insertOne({ description, keywords, link, createdAt });
 
       // send back new doc
       res.send(newDoc.ops[0]);
@@ -47,11 +47,11 @@ export default (app, db) => {
       if (/^\$/.test(collection)) throw new Error('No topic with that name.');
       if (/^\$/.test(id)) throw new Error('No resource with that id.');
 
-      // ensure body only contains description, keywords, and resource
+      // ensure body only contains description, keywords, and link
       const body = {
         description: req.body.description,
         keywords: req.body.keywords,
-        resource: req.body.resource
+        link: req.body.link
       };
 
       // find and update doc
