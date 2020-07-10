@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "buildDev": "npx babel src --watch --out-dir dist",
     "build": "npx babel src --out-dir dist",
+    "start": "node dist/index",
     "startDev": "nodemon dist/index"
   },
   "keywords": [],

@@ -13,7 +13,7 @@ app.use(morgan('dev'));
 app.use(
   cors({
     origin: '*',
-    methods: 'GET,POST,DELETE,OPTIONS',
+    methods: 'GET,POST,PUT,DELETE,OPTIONS',
     preflightContinue: false,
     optionsSuccessStatus: 204,
     maxAge: 7200
