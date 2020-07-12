@@ -29,7 +29,9 @@ export default (app, db) => {
       let { description, keywords, link, createdAt } = req.body;
 
       // insert doc
-      const newDoc = await db.collection(collection).insertOne({ description, keywords, link, createdAt });
+      const newDoc = await db
+        .collection(collection)
+        .insertOne({ description, keywords, link, createdAt });
 
       // send back new doc
       res.send(newDoc.ops[0]);
@@ -57,7 +59,11 @@ export default (app, db) => {
       // find and update doc
       const updatedDoc = await db
         .collection(collection)
-        .findOneAndUpdate({ _id: ObjectId.createFromHexString(id) }, { $set: { ...body } }, { returnOriginal: false });
+        .findOneAndUpdate(
+          { _id: ObjectId.createFromHexString(id) },
+          { $set: { ...body } },
+          { returnOriginal: false }
+        );
 
       if (!updatedDoc.value) {
         // no resource
@@ -72,6 +78,38 @@ export default (app, db) => {
     }
   });
 
+  app.put('/api/resource/add-pin/:collection/:id', async (req, res) => {
+    try {
+      const { collection, id } = req.params;
+
+      // ensure clean params
+      if (/^\$/.test(collection)) throw new Error('No topic with that name.');
+      if (/^\$/.test(id)) throw new Error('No resource with that id.');
+
+      // query id and add isPinned: true
+      const pinnedDoc = await db
+        .collection(collection)
+        .findOneAndUpdate(
+          { _id: ObjectId.createFromHexString(id) },
+          { $set: { isPinned: true } },
+          { returnOriginal: false }
+        );
+
+      // query meta and push id to pins array
+      await db
+        .collection(collection)
+        .findOneAndUpdate({ meta: true }, { $push: { pins: id } }, { upsert: true });
+
+      res.send(pinnedDoc.value);
+    } catch (err) {
+      console.log(err.message, err.stack);
+    }
+  });
+
+  app.put('/api/resource/remove-pin/:collection/:id', async (req, res) => {
+    res.send();
+  });
+
   app.delete('/api/resource/:collection/:id', async (req, res) => {
     try {
       const { collection, id } = req.params;
@@ -80,7 +118,9 @@ export default (app, db) => {
       if (/^\$/.test(collection)) throw new Error('No topic with that name.');
       if (/^\$/.test(id)) throw new Error('No resource with that id.');
 
-      const deletedDoc = await db.collection(collection).findOneAndDelete({ _id: ObjectId.createFromHexString(id) });
+      const deletedDoc = await db
+        .collection(collection)
+        .findOneAndDelete({ _id: ObjectId.createFromHexString(id) });
 
       if (!deletedDoc.value) {
         // no resource
@@ -95,3 +135,7 @@ export default (app, db) => {
     }
   });
 };
+
+function wait() {
+  return new Promise(resolve => setTimeout(() => resolve(), 2000));
+}
