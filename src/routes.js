@@ -107,7 +107,29 @@ export default (app, db) => {
   });
 
   app.put('/api/resource/remove-pin/:collection/:id', async (req, res) => {
-    res.send();
+    try {
+      const { collection, id } = req.params;
+
+      // ensure clean params
+      if (/^\$/.test(collection)) throw new Error('No topic with that name.');
+      if (/^\$/.test(id)) throw new Error('No resource with that id.');
+
+      // query id and remove isPinned: true
+      const unpinnedDoc = await db
+        .collection(collection)
+        .findOneAndUpdate(
+          { _id: ObjectId.createFromHexString(id) },
+          { $unset: { isPinned: true } },
+          { returnOriginal: false }
+        );
+
+      // query meta and push id to pins array
+      await db.collection(collection).findOneAndUpdate({ meta: true }, { $pull: { pins: id } });
+
+      res.send(unpinnedDoc.value);
+    } catch (err) {
+      console.log(err.message, err.stack);
+    }
   });
 
   app.delete('/api/resource/:collection/:id', async (req, res) => {
