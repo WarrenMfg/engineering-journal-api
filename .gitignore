@@ -3,3 +3,4 @@ package-lock.json
 URI.js
 dist
 TODO
+.env

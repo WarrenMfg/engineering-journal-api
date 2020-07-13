@@ -123,7 +123,7 @@ export default (app, db) => {
           { returnOriginal: false }
         );
 
-      // query meta and push id to pins array
+      // query meta and pull id from pins array
       await db.collection(collection).findOneAndUpdate({ meta: true }, { $pull: { pins: id } });
 
       res.send(unpinnedDoc.value);
@@ -148,7 +148,10 @@ export default (app, db) => {
         // no resource
         res.status(400).json({ message: 'Resource could not be found.' });
       } else {
-        // send it back
+        // query meta and pull id from pins array
+        await db.collection(collection).findOneAndUpdate({ meta: true }, { $pull: { pins: id } });
+
+        // send deleted doc back
         res.send(deletedDoc.value);
       }
     } catch (err) {
