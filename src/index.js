@@ -2,7 +2,6 @@ import express, { json } from 'express';
 import connect from './db';
 import morgan from 'morgan';
 import cors from 'cors';
-import { PORT } from './config/config';
 import routes from './routes';
 
 const app = express();
@@ -29,7 +28,7 @@ app.use(json());
     // api
     routes(app, db);
     // express
-    app.listen(PORT, () => console.log(`API listening ${PORT}`));
+    app.listen(process.env.PORT, () => console.log(`API listening ${process.env.PORT}`));
   } catch (err) {
     console.log(err.message, err.stack);
   }

@@ -8,7 +8,7 @@
     "buildDev": "npx babel src --watch --out-dir dist",
     "build": "npx babel src --out-dir dist",
     "start": "node dist/index",
-    "startDev": "nodemon dist/index"
+    "startDev": "nodemon -r dotenv/config dist/index"
   },
   "keywords": [],
   "author": "",

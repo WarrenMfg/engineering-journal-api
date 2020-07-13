@@ -1,6 +1,9 @@
 import { MongoClient } from 'mongodb';
-import { URI } from './config/config';
-const client = new MongoClient(URI, { useNewUrlParser: true, useUnifiedTopology: true });
+const URI = process.env.NODE_ENV === 'production' ? process.env.MONGO_ATLAS_URI : process.env.URI;
+const client = new MongoClient(URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
 export default async function connect() {
   try {
