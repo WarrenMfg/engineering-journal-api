@@ -1,7 +1,12 @@
 import { ObjectId } from 'mongodb';
 
+const hasPassword = (req, res, next) => {
+  if (req.params.password === process.env.PASSWORD) next();
+  else res.status(401).json({ message: 'Unauthorized' });
+};
+
 export default (app, db) => {
-  app.get('/api/resources/:collection', async (req, res) => {
+  app.get('/api/resources/:password/:collection', hasPassword, async (req, res) => {
     try {
       const { collection } = req.params;
 
@@ -19,7 +24,7 @@ export default (app, db) => {
     }
   });
 
-  app.post('/api/resource/:collection', async (req, res) => {
+  app.post('/api/resource/:password/:collection', hasPassword, async (req, res) => {
     try {
       const { collection } = req.params;
 
@@ -41,7 +46,7 @@ export default (app, db) => {
     }
   });
 
-  app.put('/api/resource/:collection/:id', async (req, res) => {
+  app.put('/api/resource/:password/:collection/:id', hasPassword, async (req, res) => {
     try {
       const { collection, id } = req.params;
 
@@ -78,7 +83,7 @@ export default (app, db) => {
     }
   });
 
-  app.put('/api/resource/add-pin/:collection/:id', async (req, res) => {
+  app.put('/api/resource/add-pin/:password/:collection/:id', hasPassword, async (req, res) => {
     try {
       const { collection, id } = req.params;
 
@@ -106,7 +111,7 @@ export default (app, db) => {
     }
   });
 
-  app.put('/api/resource/remove-pin/:collection/:id', async (req, res) => {
+  app.put('/api/resource/remove-pin/:password/:collection/:id', hasPassword, async (req, res) => {
     try {
       const { collection, id } = req.params;
 
@@ -132,7 +137,7 @@ export default (app, db) => {
     }
   });
 
-  app.delete('/api/resource/:collection/:id', async (req, res) => {
+  app.delete('/api/resource/:password/:collection/:id', hasPassword, async (req, res) => {
     try {
       const { collection, id } = req.params;
 
