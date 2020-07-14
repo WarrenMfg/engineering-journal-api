@@ -16,11 +16,28 @@ export default (app, db) => {
       // find all from collection and send
       const docs = await db.collection(collection).find().sort('createdAt', -1).toArray();
 
-      // send docs
-      res.send(docs);
+      // get all collection names
+      const collections = await db.collections();
+      const namespaces = collections.map(col => col.namespace.split('.')[1].toUpperCase());
+
+      // send docs and namespaces
+      res.send({ docs, namespaces });
     } catch (err) {
       console.log(err.message, err.stack);
       res.status(400).json({ message: 'Bad Request' });
+    }
+  });
+
+  app.get('/api/collections/:password', hasPassword, async (req, res) => {
+    try {
+      // get all collection names
+      const collections = await db.collections();
+      const namespaces = collections.map(col => col.namespace.split('.')[1].toUpperCase());
+
+      // send namespaces and template
+      res.send({ namespaces });
+    } catch (err) {
+      console.log(err.message, err.stack);
     }
   });
 
@@ -43,6 +60,24 @@ export default (app, db) => {
     } catch (err) {
       console.log(err.message, err.stack);
       res.status(400).json({ message: 'Bad Request' });
+    }
+  });
+
+  app.post('/api/collection/:password', hasPassword, async (req, res) => {
+    try {
+      // create collection
+      await db.createCollection(req.body.collection);
+
+      // make template
+
+      // get all collection names
+      const collections = await db.collections();
+      const namespaces = collections.map(col => col.namespace.split('.')[1].toUpperCase());
+
+      // send namespaces and template
+      res.send({ namespaces });
+    } catch (err) {
+      console.log(err.message, err.stack);
     }
   });
 
