@@ -67,16 +67,15 @@ export default (app, db) => {
   app.post('/api/collection/:password', hasPassword, async (req, res) => {
     try {
       // create collection
-      await db.createCollection(req.body.collection);
-
-      // make template
+      const newCollection = await db.createCollection(req.body.collection);
+      const newNamespace = newCollection.namespace.split('.')[1];
 
       // get all collection names
       const collections = await db.collections();
       const namespaces = collections.map(col => col.namespace.split('.')[1]);
 
       // send namespaces and template
-      res.send({ namespaces });
+      res.send({ newNamespace, namespaces });
     } catch (err) {
       console.log(err.message, err.stack);
       res.status(400).json({ message: 'Bad Request' });
