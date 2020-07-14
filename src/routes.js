@@ -38,6 +38,7 @@ export default (app, db) => {
       res.send({ namespaces });
     } catch (err) {
       console.log(err.message, err.stack);
+      res.status(400).json({ message: 'Bad Request' });
     }
   });
 
@@ -78,6 +79,7 @@ export default (app, db) => {
       res.send({ namespaces });
     } catch (err) {
       console.log(err.message, err.stack);
+      res.status(400).json({ message: 'Bad Request' });
     }
   });
 
@@ -143,6 +145,7 @@ export default (app, db) => {
       res.send(pinnedDoc.value);
     } catch (err) {
       console.log(err.message, err.stack);
+      res.status(400).json({ message: 'Bad Request' });
     }
   });
 
@@ -169,6 +172,7 @@ export default (app, db) => {
       res.send(unpinnedDoc.value);
     } catch (err) {
       console.log(err.message, err.stack);
+      res.status(400).json({ message: 'Bad Request' });
     }
   });
 
@@ -194,6 +198,26 @@ export default (app, db) => {
         // send deleted doc back
         res.send(deletedDoc.value);
       }
+    } catch (err) {
+      console.log(err.message, err.stack);
+      res.status(400).json({ message: 'Bad Request' });
+    }
+  });
+
+  app.delete('/api/collection/:password/:collection', hasPassword, async (req, res) => {
+    try {
+      const { collection } = req.params;
+
+      // ensure clean param
+      if (/^\$/.test(collection)) throw new Error('No topic with that name.');
+
+      // drop collection
+      const dropped = await db.dropCollection(collection);
+
+      // if not found, send message
+      if (!dropped) return res.status(404).json({ message: 'Not Found' });
+      // otherwise, send it
+      res.send({ dropped });
     } catch (err) {
       console.log(err.message, err.stack);
       res.status(400).json({ message: 'Bad Request' });
