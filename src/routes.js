@@ -176,6 +176,32 @@ export default (app, db) => {
     }
   });
 
+  app.put(
+    '/api/collection/:password/:fromCollection/:toCollection',
+    hasPassword,
+    async (req, res) => {
+      try {
+        const { fromCollection, toCollection } = req.params;
+
+        // ensure clean params
+        if (/^\$/.test(fromCollection)) throw new Error('No topic with that name.');
+        if (/^\$/.test(toCollection)) throw new Error('Not a valid topic name.');
+
+        // rename collection
+        const updatedCollection = await db.renameCollection(fromCollection, toCollection);
+
+        // get all namespaces
+        const collections = await db.collections();
+        const namespaces = collections.map(col => col.namespace.split('.')[1]);
+
+        res.send({ updatedCollection: updatedCollection.namespace.split('.')[1], namespaces });
+      } catch (err) {
+        console.log(err.message, err.stack);
+        res.status(400).json({ message: 'Bad Request' });
+      }
+    }
+  );
+
   app.delete('/api/resource/:password/:collection/:id', hasPassword, async (req, res) => {
     try {
       const { collection, id } = req.params;
