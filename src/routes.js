@@ -18,7 +18,7 @@ export default (app, db) => {
 
       // get all collection names
       const collections = await db.collections();
-      const namespaces = collections.map(col => col.namespace.split('.')[1].toUpperCase());
+      const namespaces = collections.map(col => col.namespace.split('.')[1]);
 
       // send docs and namespaces
       res.send({ docs, namespaces });
@@ -32,7 +32,7 @@ export default (app, db) => {
     try {
       // get all collection names
       const collections = await db.collections();
-      const namespaces = collections.map(col => col.namespace.split('.')[1].toUpperCase());
+      const namespaces = collections.map(col => col.namespace.split('.')[1]);
 
       // send namespaces and template
       res.send({ namespaces });
@@ -72,7 +72,7 @@ export default (app, db) => {
 
       // get all collection names
       const collections = await db.collections();
-      const namespaces = collections.map(col => col.namespace.split('.')[1].toUpperCase());
+      const namespaces = collections.map(col => col.namespace.split('.')[1]);
 
       // send namespaces and template
       res.send({ namespaces });
