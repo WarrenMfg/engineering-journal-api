@@ -5,6 +5,7 @@ import cors from 'cors';
 import routes from './routes';
 
 const app = express();
+app.disable('x-powered-by');
 let db;
 
 // middleware

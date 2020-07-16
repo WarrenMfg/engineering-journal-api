@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { JSDOM } from 'jsdom';
 import createDOMPurify from 'dompurify';
+import validator from 'validator';
 
 // create headless browser
 const window = new JSDOM('').window;
@@ -13,23 +14,41 @@ const hasPassword = (req, res, next) => {
   else res.status(401).json({ message: 'Unauthorized' });
 };
 
+// utility
+// escape
+const escape = input => input.replace(/\./g, '\uFF0E').replace(/\$/g, '\uFF04');
+// unescape
+const unescape = input => input.replace(/\uFF0E/g, '.').replace(/\uFF04/g, '$');
+// unescape all docs
+const unescapeDocs = array => {
+  array.forEach(doc => {
+    // don't escape meta doc; only resource docs
+    if (!doc.meta) {
+      doc.description = unescape(doc.description);
+      doc.keywords = doc.keywords.map(keyword => unescape(keyword));
+      doc.link = unescape(doc.link);
+    }
+  });
+  return array;
+};
+
 export default (app, db) => {
   app.get('/api/resources/:password/:collection', hasPassword, async (req, res) => {
     try {
       let { collection } = req.params;
 
       // ensure clean param
-      if (/^\$/.test(collection)) throw new Error('No topic with that name.');
-      collection = DOMPurify.sanitize(collection);
+      collection = escape(DOMPurify.sanitize(collection));
 
       if (!collection) return res.status(400).json({ message: 'Bad Request' });
 
       // find all from collection and send
-      const docs = await db.collection(collection).find().sort('createdAt', -1).toArray();
+      let docs = await db.collection(collection).find().sort('createdAt', -1).toArray();
+      docs = unescapeDocs(docs);
 
       // get all collection names
       const collections = await db.collections();
-      const namespaces = collections.map(col => col.namespace.split('.')[1]);
+      const namespaces = collections.map(col => unescape(col.namespace.split('.')[1]));
 
       // send docs and namespaces
       res.send({ docs, namespaces });
@@ -43,7 +62,7 @@ export default (app, db) => {
     try {
       // get all collection names
       const collections = await db.collections();
-      const namespaces = collections.map(col => col.namespace.split('.')[1]);
+      const namespaces = collections.map(col => unescape(col.namespace.split('.')[1]));
 
       // send namespaces and template
       res.send({ namespaces });
@@ -57,34 +76,36 @@ export default (app, db) => {
     try {
       let { collection } = req.params;
 
-      // ensure clean param
-      if (/^\$/.test(collection)) throw new Error('No topic with that name.');
-
       // confirm type
-      let { createdAt } = req.body;
-      if (typeof createdAt !== 'number') return res.status(400).json({ message: 'Bad Request' });
+      let { createdAt, keywords } = req.body;
+      if (typeof createdAt !== 'number' || !Array.isArray(keywords)) {
+        return res.status(400).json({ message: 'Bad Request' });
+      }
 
       // sanitize
-      collection = DOMPurify.sanitize(collection);
-      let description = DOMPurify.sanitize(req.body.description);
+      collection = escape(DOMPurify.sanitize(collection));
+      let description = escape(DOMPurify.sanitize(req.body.description));
       let link = DOMPurify.sanitize(req.body.link);
-      let keywords = req.body.keywords.reduce((arr, keyword) => {
-        keyword = DOMPurify.sanitize(keyword);
+      keywords = req.body.keywords.reduce((arr, keyword) => {
+        keyword = escape(DOMPurify.sanitize(keyword));
         if (keyword) arr.push(keyword);
         return arr;
       }, []);
 
-      if (!collection || !description || !keywords.length || !link) {
+      if (!collection || !description || !keywords.length || !validator.isURL(link)) {
         return res.status(400).json({ message: 'Bad Request' });
       }
 
       // insert doc
-      const newDoc = await db
+      let newDoc = await db
         .collection(collection)
-        .insertOne({ description, keywords, link, createdAt });
+        .insertOne({ description, keywords, link: escape(link), createdAt });
+
+      // unescape
+      newDoc = unescapeDocs(newDoc.ops);
 
       // send back new doc
-      res.send(newDoc.ops[0]);
+      res.send(newDoc[0]);
     } catch (err) {
       console.log(err.message, err.stack);
       res.status(400).json({ message: 'Bad Request' });
@@ -96,18 +117,17 @@ export default (app, db) => {
       let { collection } = req.body;
 
       // ensure clean payload
-      if (/^\$/.test(collection)) throw new Error('No topic with that name.');
-      collection = DOMPurify.sanitize(collection);
+      collection = escape(DOMPurify.sanitize(collection));
 
       if (!collection) return res.status(400).json({ message: 'Bad Request' });
 
       // create collection
       const newCollection = await db.createCollection(collection);
-      const newNamespace = newCollection.namespace.split('.')[1];
+      const newNamespace = unescape(newCollection.namespace.split('.')[1]);
 
       // get all collection names
       const collections = await db.collections();
-      const namespaces = collections.map(col => col.namespace.split('.')[1]);
+      const namespaces = collections.map(col => unescape(col.namespace.split('.')[1]));
 
       // send namespaces and template
       res.send({ newNamespace, namespaces });
@@ -122,33 +142,32 @@ export default (app, db) => {
       let { collection, id } = req.params;
 
       // ensure clean params
-      if (/^\$/.test(collection)) throw new Error('No topic with that name.');
-      if (/^\$/.test(id)) throw new Error('No resource with that id.');
-      collection = DOMPurify.sanitize(collection);
-      id = DOMPurify.sanitize(id);
+      collection = escape(DOMPurify.sanitize(collection));
+      id = escape(DOMPurify.sanitize(id));
 
-      if (!collection || !id) return res.status(400).json({ message: 'Bad Request' });
+      if (!collection || !id || !Array.isArray(req.body.keywords)) {
+        return res.status(400).json({ message: 'Bad Request' });
+      }
 
       // ensure body only contains sanitized description, keywords, and link
-      const body = {
-        description: DOMPurify.sanitize(req.body.description),
-        keywords: req.body.keywords.reduce((arr, keyword) => {
-          keyword = DOMPurify.sanitize(keyword);
-          if (keyword) arr.push(keyword);
-          return arr;
-        }, []),
-        link: DOMPurify.sanitize(req.body.link)
-      };
+      const description = escape(DOMPurify.sanitize(req.body.description));
+      const keywords = req.body.keywords.reduce((arr, keyword) => {
+        keyword = escape(DOMPurify.sanitize(keyword));
+        if (keyword) arr.push(keyword);
+        return arr;
+      }, []);
+      const link = DOMPurify.sanitize(req.body.link);
 
-      if (!body.description || !body.keywords.length || !body.link)
+      if (!description || !keywords.length || !validator.isURL(link)) {
         return res.status(400).json({ message: 'Bad Request' });
+      }
 
       // find and update doc
-      const updatedDoc = await db
+      let updatedDoc = await db
         .collection(collection)
         .findOneAndUpdate(
           { _id: ObjectId.createFromHexString(id) },
-          { $set: { ...body } },
+          { $set: { description, keywords, link: escape(link) } },
           { returnOriginal: false }
         );
 
@@ -156,8 +175,10 @@ export default (app, db) => {
         // no resource
         res.status(400).json({ message: 'Resource could not be found.' });
       } else {
+        // unescape
+        updatedDoc = unescapeDocs([ updatedDoc.value ]);
         // send it back
-        res.send(updatedDoc.value);
+        res.send(updatedDoc[0]);
       }
     } catch (err) {
       console.log(err.message, err.stack);
@@ -170,15 +191,13 @@ export default (app, db) => {
       let { collection, id } = req.params;
 
       // ensure clean params
-      if (/^\$/.test(collection)) throw new Error('No topic with that name.');
-      if (/^\$/.test(id)) throw new Error('No resource with that id.');
-      collection = DOMPurify.sanitize(collection);
-      id = DOMPurify.sanitize(id);
+      collection = escape(DOMPurify.sanitize(collection));
+      id = escape(DOMPurify.sanitize(id));
 
       if (!collection || !id) return res.status(400).json({ message: 'Bad Request' });
 
       // query id and add isPinned: true
-      const pinnedDoc = await db
+      let pinnedDoc = await db
         .collection(collection)
         .findOneAndUpdate(
           { _id: ObjectId.createFromHexString(id) },
@@ -191,7 +210,11 @@ export default (app, db) => {
         .collection(collection)
         .findOneAndUpdate({ meta: true }, { $push: { pins: id } }, { upsert: true });
 
-      res.send(pinnedDoc.value);
+      // unescape
+      pinnedDoc = unescapeDocs([ pinnedDoc.value ]);
+
+      // send it back
+      res.send(pinnedDoc[0]);
     } catch (err) {
       console.log(err.message, err.stack);
       res.status(400).json({ message: 'Bad Request' });
@@ -203,15 +226,13 @@ export default (app, db) => {
       let { collection, id } = req.params;
 
       // ensure clean params
-      if (/^\$/.test(collection)) throw new Error('No topic with that name.');
-      if (/^\$/.test(id)) throw new Error('No resource with that id.');
-      collection = DOMPurify.sanitize(collection);
-      id = DOMPurify.sanitize(id);
+      collection = escape(DOMPurify.sanitize(collection));
+      id = escape(DOMPurify.sanitize(id));
 
       if (!collection || !id) return res.status(400).json({ message: 'Bad Request' });
 
       // query id and remove isPinned: true
-      const unpinnedDoc = await db
+      let unpinnedDoc = await db
         .collection(collection)
         .findOneAndUpdate(
           { _id: ObjectId.createFromHexString(id) },
@@ -222,7 +243,11 @@ export default (app, db) => {
       // query meta and pull id from pins array
       await db.collection(collection).findOneAndUpdate({ meta: true }, { $pull: { pins: id } });
 
-      res.send(unpinnedDoc.value);
+      // unescape
+      unpinnedDoc = unescapeDocs([ unpinnedDoc.value ]);
+
+      // send it back
+      res.send(unpinnedDoc[0]);
     } catch (err) {
       console.log(err.message, err.stack);
       res.status(400).json({ message: 'Bad Request' });
@@ -237,10 +262,8 @@ export default (app, db) => {
         let { fromCollection, toCollection } = req.params;
 
         // ensure clean params
-        if (/^\$|/.test(fromCollection)) throw new Error('No topic with that name.');
-        if (/^\$|/.test(toCollection)) throw new Error('Not a valid topic name.');
-        fromCollection = DOMPurify.sanitize(fromCollection.trim());
-        toCollection = DOMPurify.sanitize(toCollection.trim());
+        fromCollection = escape(DOMPurify.sanitize(fromCollection));
+        toCollection = escape(DOMPurify.sanitize(toCollection));
 
         if (!fromCollection || !toCollection) {
           return res.status(400).json({ message: 'Bad Request' });
@@ -251,9 +274,12 @@ export default (app, db) => {
 
         // get all namespaces
         const collections = await db.collections();
-        const namespaces = collections.map(col => col.namespace.split('.')[1]);
+        const namespaces = collections.map(col => unescape(col.namespace.split('.')[1]));
 
-        res.send({ updatedCollection: updatedCollection.namespace.split('.')[1], namespaces });
+        res.send({
+          updatedCollection: unescape(updatedCollection.namespace.split('.')[1]),
+          namespaces
+        });
       } catch (err) {
         console.log(err.message, err.stack);
         res.status(400).json({ message: 'Bad Request' });
@@ -266,14 +292,12 @@ export default (app, db) => {
       let { collection, id } = req.params;
 
       // ensure clean params
-      if (/^\$/.test(collection)) throw new Error('No topic with that name.');
-      if (/^\$/.test(id)) throw new Error('No resource with that id.');
-      collection = DOMPurify.sanitize(collection);
-      id = DOMPurify.sanitize(id);
+      collection = escape(DOMPurify.sanitize(collection));
+      id = escape(DOMPurify.sanitize(id));
 
       if (!collection || !id) return res.status(400).json({ message: 'Bad Request' });
 
-      const deletedDoc = await db
+      let deletedDoc = await db
         .collection(collection)
         .findOneAndDelete({ _id: ObjectId.createFromHexString(id) });
 
@@ -284,8 +308,10 @@ export default (app, db) => {
         // query meta and pull id from pins array
         await db.collection(collection).findOneAndUpdate({ meta: true }, { $pull: { pins: id } });
 
+        // unescape
+        deletedDoc = unescapeDocs([ deletedDoc.value ]);
         // send deleted doc back
-        res.send(deletedDoc.value);
+        res.send(deletedDoc[0]);
       }
     } catch (err) {
       console.log(err.message, err.stack);
@@ -298,8 +324,7 @@ export default (app, db) => {
       let { collection } = req.params;
 
       // ensure clean param
-      if (/^\$/.test(collection)) throw new Error('No topic with that name.');
-      collection = DOMPurify.sanitize(collection);
+      collection = escape(DOMPurify.sanitize(collection));
 
       if (!collection) return res.status(400).json({ message: 'Bad Request' });
 
