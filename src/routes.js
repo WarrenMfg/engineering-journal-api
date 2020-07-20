@@ -275,7 +275,12 @@ export default (app, db) => {
           }
 
           // insert doc in toCollection
-          let newDoc = await db.collection(toCollection).insertOne(deletedDoc.value);
+          let newDoc = await db.collection(toCollection).insertOne({
+            ...deletedDoc.value,
+            description,
+            keywords,
+            link: escape(link)
+          });
 
           if (deletedDoc.value.isPinned) {
             await db
