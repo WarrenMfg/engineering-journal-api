@@ -137,55 +137,6 @@ export default (app, db) => {
     }
   });
 
-  app.put('/api/resource/:password/:collection/:id', hasPassword, async (req, res) => {
-    try {
-      let { collection, id } = req.params;
-
-      // ensure clean params
-      collection = escape(DOMPurify.sanitize(collection));
-      id = escape(DOMPurify.sanitize(id));
-
-      if (!collection || !id || !Array.isArray(req.body.keywords)) {
-        return res.status(400).json({ message: 'Bad Request' });
-      }
-
-      // ensure body only contains sanitized description, keywords, and link
-      const description = escape(DOMPurify.sanitize(req.body.description));
-      const keywords = req.body.keywords.reduce((arr, keyword) => {
-        keyword = escape(DOMPurify.sanitize(keyword));
-        if (keyword) arr.push(keyword);
-        return arr;
-      }, []);
-      const link = DOMPurify.sanitize(req.body.link);
-
-      if (!description || !keywords.length || !validator.isURL(link)) {
-        return res.status(400).json({ message: 'Bad Request' });
-      }
-
-      // find and update doc
-      let updatedDoc = await db
-        .collection(collection)
-        .findOneAndUpdate(
-          { _id: ObjectId.createFromHexString(id) },
-          { $set: { description, keywords, link: escape(link) } },
-          { returnOriginal: false }
-        );
-
-      if (!updatedDoc.value) {
-        // no resource
-        res.status(400).json({ message: 'Resource could not be found.' });
-      } else {
-        // unescape
-        updatedDoc = unescapeDocs([ updatedDoc.value ]);
-        // send it back
-        res.send(updatedDoc[0]);
-      }
-    } catch (err) {
-      console.log(err.message, err.stack);
-      res.status(400).json({ message: 'Bad Request' });
-    }
-  });
-
   app.put('/api/resource/add-pin/:password/:collection/:id', hasPassword, async (req, res) => {
     try {
       let { collection, id } = req.params;
@@ -253,6 +204,97 @@ export default (app, db) => {
       res.status(400).json({ message: 'Bad Request' });
     }
   });
+
+  app.put(
+    '/api/resource/:password/:fromCollection/:toCollection/:id',
+    hasPassword,
+    async (req, res) => {
+      try {
+        let { fromCollection, toCollection, id } = req.params;
+
+        // ensure clean params
+        fromCollection = escape(DOMPurify.sanitize(fromCollection));
+        toCollection = escape(DOMPurify.sanitize(toCollection));
+        id = escape(DOMPurify.sanitize(id));
+
+        if (!fromCollection || !toCollection || !id || !Array.isArray(req.body.keywords)) {
+          return res.status(400).json({ message: 'Bad Request' });
+        }
+
+        // ensure body only contains sanitized description, keywords, and link
+        const description = escape(DOMPurify.sanitize(req.body.description));
+        const keywords = req.body.keywords.reduce((arr, keyword) => {
+          keyword = escape(DOMPurify.sanitize(keyword));
+          if (keyword) arr.push(keyword);
+          return arr;
+        }, []);
+        const link = DOMPurify.sanitize(req.body.link);
+
+        if (!description || !keywords.length || !validator.isURL(link)) {
+          return res.status(400).json({ message: 'Bad Request' });
+        }
+
+        // if fromCollection and toCollection are equal
+        if (fromCollection === toCollection) {
+          // find and update doc
+          let updatedDoc = await db
+            .collection(fromCollection)
+            .findOneAndUpdate(
+              { _id: ObjectId.createFromHexString(id) },
+              { $set: { description, keywords, link: escape(link) } },
+              { returnOriginal: false }
+            );
+
+          if (!updatedDoc.value) {
+            // no resource
+            res.status(400).json({ message: 'Resource could not be found.' });
+          } else {
+            // unescape
+            updatedDoc = unescapeDocs([ updatedDoc.value ]);
+            // send it back
+            res.send(updatedDoc[0]);
+          }
+
+          // otherwise, delete doc fromCollection and insert toCollection
+        } else {
+          // delete doc from fromCollection
+          let deletedDoc = await db
+            .collection(fromCollection)
+            .findOneAndDelete({ _id: ObjectId.createFromHexString(id) });
+
+          if (!deletedDoc.value) {
+            // no resource
+            res.status(400).json({ message: 'Resource could not be found.' });
+          }
+
+          if (deletedDoc.value.isPinned) {
+            // query meta and pull id from pins array
+            await db
+              .collection(fromCollection)
+              .findOneAndUpdate({ meta: true }, { $pull: { pins: id } });
+          }
+
+          // insert doc in toCollection
+          let newDoc = await db.collection(toCollection).insertOne(deletedDoc.value);
+
+          if (deletedDoc.value.isPinned) {
+            await db
+              .collection(toCollection)
+              .findOneAndUpdate({ meta: true }, { $push: { pins: id } }, { upsert: true });
+          }
+
+          // unescape
+          newDoc = unescapeDocs(newDoc.ops);
+
+          // send back new doc
+          res.send(newDoc[0]);
+        }
+      } catch (err) {
+        console.log(err.message, err.stack);
+        res.status(400).json({ message: 'Bad Request' });
+      }
+    }
+  );
 
   app.put(
     '/api/collection/:password/:fromCollection/:toCollection',
