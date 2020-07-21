@@ -21,7 +21,7 @@ app.use(
   })
 );
 app.use(json());
-app.use('/*', express.static(resolve(__dirname, '../client')));
+app.use(express.static(resolve(__dirname, '../client')));
 
 // connections and api
 (async () => {

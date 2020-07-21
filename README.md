@@ -4,7 +4,7 @@
 |--------|-------------|--------------------------------------------------------------|:---------------------------------:|------------------------------|
 | GET    | resources   | `/api/resources/:password/:collection`                       | \-\-                              | resources and topics         |
 | GET    | collections | `/api/collections/:password`                                 | \-\-                              | topics                       |
-| POST   | resource    | `/api/resource/:password/:collection`                        | description, keywords, and link   | resource                     |
+| POST   | resource    | `/api/resource/:password/:collection`                        | description, keywords, link, and createdAt   | resource                     |
 | POST   | collection  | `/api/collection/:password`                                  | topic                             | new topic and all topics     |
 | PUT    | resource    | `/api/resource/add-pin/:password/:collection/:id`            | \-\-                              | pinned resource              |
 | PUT    | resource    | `/api/resource/remove-pin/:password/:collection/:id`         | \-\-                              | unpinned resource            |
