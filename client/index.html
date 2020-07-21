@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Engineering Journal</title>
+</head>
+
+<body>
+  <table>
+    <thead>
+      <tr>
+        <td>Method</td>
+        <td>Target</td>
+        <td>Endpoint</td>
+        <td>Body</td>
+        <td>Returns</td>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>GET</td>
+        <td>resources</td>
+        <td>/api/resources/:password/:collection</td>
+        <td>--</td>
+        <td>resources and topics</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>collections</td>
+        <td>/api/collections/:password</td>
+        <td>--</td>
+        <td>topics</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>resource</td>
+        <td>/api/resource/:password/:collection</td>
+        <td>description, keywords, and link</td>
+        <td>resource</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>collection</td>
+        <td>/api/collection/:password</td>
+        <td>topic</td>
+        <td>new topic and all topics</td>
+      </tr>
+      <tr>
+        <td>PUT</td>
+        <td>resource</td>
+        <td>/api/resource/add-pin/:password/:collection/:id</td>
+        <td>--</td>
+        <td>pinned resource</td>
+      </tr>
+      <tr>
+        <td>PUT</td>
+        <td>resource</td>
+        <td>/api/resource/remove-pin/:password/:collection/:id</td>
+        <td>--</td>
+        <td>unpinned resource</td>
+      </tr>
+      <tr>
+        <td>PUT</td>
+        <td>resource</td>
+        <td>/api/resource/:password/:fromCollection/:toCollection/:id</td>
+        <td>--</td>
+        <td>resource</td>
+      </tr>
+      <tr>
+        <td>PUT</td>
+        <td>collection</td>
+        <td>/api/collection/:password/:fromCollection/:toCollection</td>
+        <td>--</td>
+        <td>updated topic and all topics</td>
+      </tr>
+      <tr>
+        <td>DELETE</td>
+        <td>resource</td>
+        <td>/api/resource/:password/:collection/:id</td>
+        <td>--</td>
+        <td>deleted resource</td>
+      </tr>
+      <tr>
+        <td>DELETE</td>
+        <td>collection</td>
+        <td>/api/collection/:password/:collection</td>
+        <td>--</td>
+        <td>acknowledgement</td>
+      </tr>
+    <tbody>
+  </table>
+</body>
+
+</html>
