@@ -8,7 +8,7 @@
 | POST   | collection  | `/api/collection/:password`                                  | topic                             | new topic and all topics     |
 | PUT    | resource    | `/api/resource/add-pin/:password/:collection/:id`            | \-\-                              | pinned resource              |
 | PUT    | resource    | `/api/resource/remove-pin/:password/:collection/:id`         | \-\-                              | unpinned resource            |
-| PUT    | resource    | `/api/resource/:password/:fromCollection/:toCollection/:id`  | \-\-                              | resource                     |
+| PUT    | resource    | `/api/resource/:password/:fromCollection/:toCollection/:id`  | description, keywords, link, and createdAt   | resource                     |
 | PUT    | collection  | `/api/collection/:password/:fromCollection/:toCollection`    | \-\-                              | updated topic and all topics |
 | DELETE | resource    | `/api/resource/:password/:collection/:id`                    | \-\-                              | deleted resource             |
 | DELETE | collection  | `/api/collection/:password/:collection`                      | \-\-                              | acknowledgement              |

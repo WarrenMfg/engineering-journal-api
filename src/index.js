@@ -1,6 +1,6 @@
 import express, { json } from 'express';
 import connect from './db';
-// import morgan from 'morgan';
+import morgan from 'morgan';
 import cors from 'cors';
 import routes from './routes';
 import { resolve } from 'path';
@@ -10,7 +10,7 @@ app.disable('x-powered-by');
 let db;
 
 // middleware
-// app.use(morgan('dev'));
+app.use(morgan('dev'));
 app.use(
   cors({
     origin: '*',
@@ -21,7 +21,7 @@ app.use(
   })
 );
 app.use(json());
-app.use(express.static(resolve(__dirname, '../client')));
+app.use(express.static(resolve(__dirname, '../docs')));
 
 // connections and api
 (async () => {
