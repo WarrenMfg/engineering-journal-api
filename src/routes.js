@@ -328,8 +328,13 @@ export default (app, db) => {
           namespaces
         });
       } catch (err) {
-        console.log(err.message, err.stack);
-        res.status(400).json({ message: 'Bad Request' });
+        if (err.message === 'target namespace exists') {
+          console.log(err.message, err.stack);
+          res.status(409).json({ message: 'Topic already exists' });
+        } else {
+          console.log(err.message, err.stack);
+          res.status(400).json({ message: 'Bad Request' });
+        }
       }
     }
   );
