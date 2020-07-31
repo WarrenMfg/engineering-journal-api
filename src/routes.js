@@ -1,6 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 /* IMPORT STATEMENTS */
 ////////////////////////////////////////////////////////////////////////////////
+/**
+ * @const sgMail
+ * @type {object}
+ * @desc SendGrid notification system for unauthorized login attempts
+ */
+import sgMail from '@sendgrid/mail';
 
 /**
  * @const ObjectId
@@ -63,6 +69,14 @@ const DOMPurify = createDOMPurify(window);
  */
 DOMPurify.setConfig({ ALLOWED_TAGS: [] });
 
+/**
+ * @method setApiKey
+ * @desc Sets SendGrid API key
+ * @param {string} SENDGRID_API_KEY Account API key
+ * @returns {undefined}
+ */
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
 ////////////////////////////////////////////////////////////////////////////////
 /* MIDDLEWARE */
 ////////////////////////////////////////////////////////////////////////////////
@@ -75,15 +89,31 @@ DOMPurify.setConfig({ ALLOWED_TAGS: [] });
 
 /**
  * @function
- * @desc Middleware to ensure user is authenticated.
+ * @desc Middleware to ensure user is authenticated. Uses SendGrid for incorrect passwords.
  * @param {object} req Request object
  * @param {object} res Response object
  * @param {function} next To pass control to the next handler
  * @see middleware
  */
-const hasPassword = (req, res, next) => {
+const hasPassword = async (req, res, next) => {
   if (req.params.password === process.env.PASSWORD) next();
-  else res.status(401).json({ message: 'Unauthorized' });
+  else {
+    try {
+      const msg = {
+        to: process.env.TO_EMAIL,
+        from: process.env.FROM_EMAIL,
+        subject: 'App Activity',
+        text: 'Engineering Journal API - unauthorized attempt',
+        html: `<h1>Unauthorized Attempt</h1> <p>Engineering Journal API</p>`
+      };
+
+      await sgMail.send(msg);
+    } catch (err) {
+      console.error(err.response.body);
+    } finally {
+      res.status(401).json({ message: 'Unauthorized' });
+    }
+  }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

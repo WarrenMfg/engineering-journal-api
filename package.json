@@ -25,6 +25,7 @@
   "license": "ISC",
   "dependencies": {
     "@babel/runtime": "^7.10.4",
+    "@sendgrid/mail": "^7.2.2",
     "cors": "^2.8.5",
     "dompurify": "^2.0.12",
     "dotenv": "^8.2.0",
